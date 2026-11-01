@@ -57,8 +57,8 @@ information.
 make proxy
 ```
 
-Leave it running. It accepts connections only from `STATION_IP` and enables ADB only for matching
-`device_id`, platform, and API requests. Other configuration fields stay intact.
+Leave it running. It accepts connections only from `STATION_IP` and patches the ADB setting only for
+matching `device_id`, platform, and API requests. Other configuration fields stay intact.
 
 By default, update checks return `{"hasUpdate":false}`. The proxy ignores existing offer receipts
 and does not load a firmware manifest. Use `OFFER_UPDATE=0` to select this behavior explicitly.
@@ -83,6 +83,11 @@ verified HTTPS.
 Keep the Station's internet access. Leave other devices' DNS and the router's global DNS rebinding
 protection unchanged.
 
+If the router only supports network-wide DNS settings, use a separate network or a router that can
+isolate the Station's DNS. This DNS helper redirects the three names for every client that uses it,
+but the proxy accepts only `STATION_IP`. Assigning the helper to the whole LAN can break Yandex
+requests from the setup phone and other devices, even while other internet services work.
+
 ### 3. Connect over ADB
 
 Restart the Station, then run:
@@ -93,7 +98,9 @@ make status
 ```
 
 `status` prints the firmware, ADB guard, OTA launcher configuration, and activation markers. For a
-factory-reset device, see [Firmware and factory recovery](#firmware-and-factory-recovery).
+factory-reset device, see [Firmware and factory recovery](#firmware-and-factory-recovery). Confirm
+root ADB access before continuing. A proxy log about a prepared configuration does not prove that
+the Station received or applied it.
 
 ## Keep access
 
@@ -192,6 +199,17 @@ Restore uses saved originals and refuses to overwrite unrelated edits. Restoring
 keeps its activation markers. A later cloud configuration can deactivate ADB again.
 
 ## Troubleshooting
+
+Compare the bracketed client IP on connection and TLS error lines with the Station's current
+`STATION_IP`. `Selected Station` lines are already filtered to that IP and do not print it.
+
+| Symptom                                                           | Meaning and next check                                                                                                                                                             |
+| ----------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Selected Station connectivity check` with `204`                  | The proxy answered the HTTP connectivity check locally. This does not verify HTTPS, upstream internet access, configuration changes, or ADB.                                       |
+| `Client TLS handshake failed` with `unknown ca` from `STATION_IP` | The Station rejected the proxy certificate before the HTTP configuration handler ran. Check firmware compatibility. Changing the phone's DNS does not fix the Station's TLS trust. |
+| TLS errors from another IP                                        | These concern another device. Check whether network-wide DNS also redirected it to the proxy.                                                                                      |
+| `Selected Station configuration prepared with ADB enabled`        | The proxy prepared the configuration response. Run `make connect` and `make status` to verify root ADB on the Station.                                                             |
+| ADB `Connection refused`                                          | Root ADB access is not established. Check the current Station IP and proxy logs. A `204` or prepared response is not proof that port 5555 is listening.                            |
 
 - If ADB does not connect, check the Station's current IP, the three DNS overrides, internet access,
   and proxy output. Check the firmware against the compatibility note at the top.

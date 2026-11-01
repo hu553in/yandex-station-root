@@ -273,7 +273,7 @@ class StationConfig:
         flow.response.content = after
         for header in ("etag", "content-md5"):
             flow.response.headers.pop(header, None)
-        logger.info("Selected Station configuration enabled ADB")
+        logger.info("Selected Station configuration prepared with ADB enabled")
 
 
 addons = [StationConfig()]
