@@ -15,6 +15,26 @@ ADB_BACKUP = "activate_adb.root_original.sh"
 LAUNCHER = "launch.json"
 LAUNCH_BACKUP = "launch.root_original.json"
 LOCK = "/data/local/tmp/station-root.lock"
+UPDATER_PROBE = f"""set -eu
+proc=/proc
+want=$(mktemp /tmp/station-updater.XXXXXX)
+trap 'rm -f "$want"' EXIT
+printf '%s\\000%s\\000' {Q}/maind --updatesd > "$want"
+seen=0
+for d in "$proc"/[0-9]*; do
+    [ -d "$d" ] || continue
+    seen=1
+    if cmp -s "$d/cmdline" "$want"; then
+        exe=$(readlink -f "$d/exe") || {{ echo unknown; exit 0; }}
+        [ "$exe" = {Q}/maind ] || continue
+        printf 'pid %s\\n' "${{d##*/}}"
+    else
+        code=$?
+        if [ "$code" -gt 1 ] && [ -d "$d" ]; then echo unknown; exit 0; fi
+    fi
+done
+[ "$seen" = 1 ] || echo unknown
+"""
 WRAPPER = """#!/bin/sh
 case " $* " in
     *" deactivate "*) exit 0 ;;
@@ -281,6 +301,17 @@ def read_snapshot(adb, serial):
     return files
 
 
+def updater_status(adb, serial):
+    try:
+        lines = adb_shell(adb, serial, UPDATER_PROBE).decode().splitlines()
+        if any(re.fullmatch(r"pid [1-9][0-9]*", line) is None for line in lines):
+            return "unknown"
+        pids = [line[4:] for line in lines]
+        return "running (PID " + ", ".join(pids) + ")" if pids else "not observed"
+    except (OSError, ValueError, UnicodeError, subprocess.SubprocessError):
+        return "unknown"
+
+
 def apply_change(adb, serial, files, destination, replacement, backup, markers):
     stage = (
         adb_shell(adb, serial, "mktemp -d /data/local/tmp/station-root.XXXXXX")
@@ -391,6 +422,7 @@ def main():
             print("Firmware " + files["version_full"].decode().strip())
             print("ADB " + adb_state)
             print("OTA " + ota_state + " in launcher configuration")
+            print("Updater in this boot: " + updater_status(args.adb, args.serial))
             markers = adb_shell(
                 args.adb,
                 args.serial,
@@ -420,6 +452,8 @@ def main():
         else:
             detail = "; launcher unchanged"
         print("Applied " + args.operation + detail)
+        if not is_adb:
+            print("Updater in this boot: " + updater_status(args.adb, args.serial))
     except (
         OSError,
         ValueError,

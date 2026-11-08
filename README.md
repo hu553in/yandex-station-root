@@ -100,9 +100,9 @@ make setup
 make check
 ```
 
-**Checkpoint:** `make check` ends with `Source syntax and firmware manifest verified`. These checks
-do not contact the Station. uv installs the locked dependencies in `.venv` and downloads Python 3.13
-if needed. You do not need to install Python packages globally.
+**Checkpoint:** `make check` prints `Source syntax and firmware manifest verified` and finishes with
+`OK`. These checks do not contact the Station. uv installs the locked dependencies in `.venv` and
+downloads Python 3.13 if needed. You do not need to install Python packages globally.
 
 Run all remaining `make` commands from this folder. In a new terminal, return with:
 
@@ -221,7 +221,8 @@ make status
 
 **Checkpoint:** `make status` completes without an error and prints `Firmware`, `ADB`, `OTA`, and
 the activation markers. This command requires root ADB. Before installation, `ADB native script` and
-`OTA enabled in launcher configuration` are normal.
+`OTA enabled in launcher configuration` are normal. The updater may already be running while OTA is
+enabled.
 
 **Do not continue on `Connection refused`, a TLS error, or a failed status check.** Use
 [troubleshooting](#troubleshooting). A `204` connectivity check or a log saying that an ADB response
@@ -264,10 +265,13 @@ check that root access still works without the helpers.
   reboot applies the launcher change.
 - Originals are saved under `/system/vendor/quasar/`. Keep these backups. The installer refuses
   ambiguous backups or unrelated edits and accepts earlier versions of the same ADB guard.
-- File-structure checks do not authenticate firmware. `status` reports launcher configuration, not
-  whether an updater from the current boot is still running.
+- `status` reports the OTA launcher setting and the updater observed in the current boot. If the
+  launcher is disabled but the updater is still `running`, reboot to stop the already launched
+  process. `not observed` is a process snapshot, not proof that an update cannot happen. `unknown`
+  means the probe failed. File-structure checks do not authenticate firmware.
 - **Network ADB has no key authentication on the tested firmware.** Keep port 5555 inside a trusted
-  LAN. Do not forward it from the internet.
+  LAN. Do not forward it from the internet. On a shared network, isolate the Station at the router
+  and allow management access only from your computer.
 
 **Root setup is complete.** To talk to ChatGPT on the Station, continue with
 [ChatGPT Voice for Yandex Station](https://github.com/hu553in/yandex-station-chatgpt-voice).
@@ -435,12 +439,12 @@ Retry the interrupted command only after checking the previous outcome. Keep the
 
 ## Other commands
 
-| Command       | Action                                                                      |
-| ------------- | --------------------------------------------------------------------------- |
-| `make help`   | List all commands.                                                          |
-| `make status` | Inspect root access, firmware, the ADB guard, and update launcher settings. |
-| `make check`  | Check source syntax and the local manifest without contacting a Station.    |
-| `make clean`  | Remove `.venv` and Python caches. Keep settings and private files.          |
+| Command       | Action                                                                                                   |
+| ------------- | -------------------------------------------------------------------------------------------------------- |
+| `make help`   | List all commands.                                                                                       |
+| `make status` | Inspect root access, firmware, the ADB guard, update launcher settings, and the current updater process. |
+| `make check`  | Check source syntax and the local manifest without contacting a Station.                                 |
+| `make clean`  | Remove `.venv` and Python caches. Keep settings and private files.                                       |
 
 <details>
 <summary>Restore the original ADB script and automatic updates</summary>

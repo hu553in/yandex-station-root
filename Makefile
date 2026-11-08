@@ -37,7 +37,7 @@ help:
 	  '                 OFFER_UPDATE=1 enables the armed bundled Mini 2 offer' \
 	  'dns              Run DNS overrides with normal forwarding' \
 	  'connect          Connect ADB to the selected Station' \
-	  'status           Check root, firmware, ADB guard and OTA configuration' \
+	  'status           Check root, firmware, ADB guard, OTA and running updater' \
 	  'install          Install the ADB guard and disable OTA' \
 	  'install-adb      Install the persistent ADB guard' \
 	  'disable-updates  Disable the native OTA launcher task' \
@@ -105,7 +105,8 @@ reboot: connect
 
 check: setup
 	$(VENV)/python -c 'import ast; from pathlib import Path; [ast.parse(p.read_text(), filename=str(p)) for p in Path(".").glob("*.py")]'
-	$(VENV)/python -c 'from pathlib import Path; import json, subprocess; from urllib.parse import urlsplit; from firmware_offer import validate_manifest; from persistence import SNAPSHOT, WRAPPER; [subprocess.run(["sh", "-n"], input=s.encode(), check=True) for s in (SNAPSHOT, WRAPPER.format(backup="/system/vendor/quasar/activate_adb.root_original.sh"))]; content = Path("firmware/update_manifest.json").read_bytes(); platform = urlsplit(json.loads(content)["downloadUrl"]).path.split("/")[1]; validate_manifest(content, platform); print("Source syntax and firmware manifest verified")'
+	$(VENV)/python -c 'from pathlib import Path; import json, subprocess; from urllib.parse import urlsplit; from firmware_offer import validate_manifest; from persistence import SNAPSHOT, UPDATER_PROBE, WRAPPER; [subprocess.run(["sh", "-n"], input=s.encode(), check=True) for s in (SNAPSHOT, UPDATER_PROBE, WRAPPER.format(backup="/system/vendor/quasar/activate_adb.root_original.sh"))]; content = Path("firmware/update_manifest.json").read_bytes(); platform = urlsplit(json.loads(content)["downloadUrl"]).path.split("/")[1]; validate_manifest(content, platform); print("Source syntax and firmware manifest verified")'
+	PYTHONDONTWRITEBYTECODE=1 $(VENV)/python -m unittest discover -p 'test_*.py'
 
 clean:
 	rm -rf .venv __pycache__
