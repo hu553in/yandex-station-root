@@ -1,5 +1,5 @@
 import shlex
-import subprocess
+import subprocess  # nosec B404 # explicit local argv, no host shell
 import tempfile
 import unittest
 from pathlib import Path
@@ -16,8 +16,9 @@ class UpdaterStatusTest(unittest.TestCase):
             (b"pid 123\nunknown\n", "unknown"),
             (b"unrecognized\n", "unknown"),
         ):
-            with self.subTest(result=result), patch.object(
-                persistence, "adb_shell", return_value=result
+            with (
+                self.subTest(result=result),
+                patch.object(persistence, "adb_shell", return_value=result),
             ):
                 self.assertEqual(persistence.updater_status("adb", "station"), expected)
         with patch.object(persistence, "adb_shell", side_effect=ValueError("failed")):
@@ -39,20 +40,18 @@ class UpdaterStatusTest(unittest.TestCase):
             ):
                 process = root / str(pid)
                 process.mkdir()
-                (process / "cmdline").write_bytes(
-                    b"\0".join(arg.encode() for arg in argv) + b"\0"
-                )
+                (process / "cmdline").write_bytes(b"\0".join(arg.encode() for arg in argv) + b"\0")
                 (process / "exe").symlink_to(target)
             script = persistence.UPDATER_PROBE.replace(
                 "proc=/proc", "proc=" + shlex.quote(name)
             ).replace(persistence.Q + "/maind", shlex.quote(str(executable)))
-            result = subprocess.run(
+            result = subprocess.run(  # nosec B603 B607 # local synthetic proc fixture through sh
                 ["sh"], input=script, capture_output=True, text=True, check=True
             )
             self.assertEqual(result.stdout, "pid 101\n")
 
             (root / "101" / "cmdline").unlink()
-            result = subprocess.run(
+            result = subprocess.run(  # nosec B603 B607 # local synthetic proc fixture through sh
                 ["sh"], input=script, capture_output=True, text=True, check=True
             )
             self.assertEqual(result.stdout, "unknown\n")

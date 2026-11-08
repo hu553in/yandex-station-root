@@ -1,10 +1,102 @@
 [project]
 name = "yandex-station-root"
 version = "0.1.0"
-requires-python = ">=3.13,<3.14"
+description = "Host tools for enabling root ADB and managing supported Yandex Stations."
+authors = [{ name = "Ruslan Khasanshin" }]
+readme = "README.md"
+requires-python = ">=3.13.0"
 dependencies = [
-    "dnslib==0.9.26",
-    "dnspython==2.9.0",
-    "mitmproxy==12.3.0",
-    "cryptography==50.0.2",
+  "cryptography>=50.0.2",
+  "dnslib>=0.9.26",
+  "dnspython>=2.9.2",
+  "mitmproxy>=12.3.1",
 ]
+
+[project.urls]
+Repository = "https://github.com/hu553in/yandex-station-root"
+
+[dependency-groups]
+dev = [
+  "bandit>=1.9.4",
+  "deptry>=0.25.1",
+  "prek>=0.5.10",
+  "pysentry-rs>=0.5.0",
+  "ruff>=0.17.3",
+  "ty>=0.0.98",
+  "vulture>=2.16",
+]
+
+[tool.uv]
+package = false
+link-mode = "copy"
+# Matches the Renovate minimumReleaseAge, so lockfile maintenance waits too.
+exclude-newer = "3 days"
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+select = [
+  "E",
+  "F",
+  "I",
+  "UP",
+  "B",
+  "SIM",
+  "ARG",
+  "PL",
+  "RUF",
+  "C4",
+  "FA",
+  "N",
+  "PERF",
+  "W",
+  "PGH004",
+  "T10",
+]
+
+[tool.ruff.lint.isort]
+split-on-trailing-comma = false
+
+[tool.ruff.lint.per-file-ignores]
+# These comparisons express HTTP, DNS wire-size and firmware CRC/version bounds.
+"config_proxy.py" = ["PLR2004"]
+"dns_proxy.py" = ["PLR2004"]
+"firmware_offer.py" = ["PLR2004"]
+
+[tool.ruff.format]
+skip-magic-trailing-comma = true
+
+[tool.pysentry.defaults]
+fail_on = "low"
+
+[tool.pysentry.sources]
+enabled = ["pypa", "pypi", "osv"]
+
+[tool.pysentry.ignore]
+# mitmdump uses mitmproxy's HTTP stack, not Tornado's HTTP server, client or RedirectHandler.
+# Reassess if mitmweb or Tornado addons are added; remove after upgrading to a fixed Tornado release.
+ids = ["GHSA-pcg2-g6cj-q92c", "GHSA-r4j5-9xpp-3985", "GHSA-pw9p-v7r6-gx4p"]
+
+[tool.deptry]
+known_first_party = [
+  "check_source",
+  "config_proxy",
+  "dns_proxy",
+  "firmware_offer",
+  "issue_certificate",
+  "persistence",
+]
+
+[tool.vulture]
+paths = [
+  "check_source.py",
+  "config_proxy.py",
+  "dns_proxy.py",
+  "firmware_offer.py",
+  "issue_certificate.py",
+  "persistence.py",
+  "test_persistence.py",
+]
+min_confidence = 100
+sort_by_size = true

@@ -1,5 +1,7 @@
 # Yandex Station root
 
+[![CI](https://github.com/hu553in/yandex-station-root/actions/workflows/ci.yml/badge.svg)](https://github.com/hu553in/yandex-station-root/actions/workflows/ci.yml)
+
 Get administrator access to a Yandex Station through ADB, the tool used to connect to its Linux
 system. Keep that access after a reboot and turn off automatic firmware updates.
 
@@ -96,13 +98,13 @@ mkdir -p ~/Projects
 cd ~/Projects
 git clone https://github.com/hu553in/yandex-station-root.git
 cd yandex-station-root
-make setup
-make check
+make check-source test
 ```
 
-**Checkpoint:** `make check` prints `Source syntax and firmware manifest verified` and finishes with
-`OK`. These checks do not contact the Station. uv installs the locked dependencies in `.venv` and
-downloads Python 3.13 if needed. You do not need to install Python packages globally.
+**Checkpoint:** `make check-source test` prints `Source syntax and firmware manifest verified` and
+finishes with `OK`. These checks do not contact the Station. uv installs the locked dependencies in
+`.venv` and downloads a compatible Python if needed (see `requires-python` in `pyproject.toml`). You
+do not need to install Python packages globally.
 
 Run all remaining `make` commands from this folder. In a new terminal, return with:
 
@@ -437,14 +439,46 @@ Retry the interrupted command only after checking the previous outcome. Keep the
 
 </details>
 
+## Developer checks
+
+Normal setup needs only `make check-source test`. For the complete developer checks, also install
+[Bun](https://bun.sh/docs/installation) and [Node.js](https://nodejs.org/). Some developer
+dependencies build Rust extensions when a Python wheel is unavailable; install
+[Rust](https://rustup.rs/) if uv reports a missing Rust compiler. Normal Station commands do not
+install developer tools. Run:
+
+```sh
+make install-deps
+make check
+```
+
+This checks formatting, Ruff, types, dependencies, known vulnerabilities, unused code, Bandit,
+embedded shell, the firmware manifest, host tests, Renovate and GitHub Actions. It does not contact
+a Station or modify router settings. `make lint-fix` applies supported formatting fixes;
+`make check-fix` applies them and then repeats all checks.
+
+Dependencies are declared in `pyproject.toml` and locked by uv. Renovate uses the shared
+[Python preset](https://github.com/hu553in/common-things/blob/main/presets/renovate/python.json).
+New package releases wait three days. Investigate vulnerability findings before adding a scoped
+exception. The three Tornado advisory IDs in [pyproject.toml](pyproject.toml) affect Tornado's HTTP
+servers, HTTP clients, and redirect handlers. This project runs `mitmdump`, whose proxy stack does
+not use those components. Reassess these exceptions before using `mitmweb` or addons that use
+Tornado, and remove them after upgrading to a fixed Tornado release.
+
+After `make install-deps`, enable the project checks and Conventional Commit hooks once per clone:
+
+```sh
+uv run --locked prek install
+```
+
 ## Other commands
 
-| Command       | Action                                                                                                   |
-| ------------- | -------------------------------------------------------------------------------------------------------- |
-| `make help`   | List all commands.                                                                                       |
-| `make status` | Inspect root access, firmware, the ADB guard, update launcher settings, and the current updater process. |
-| `make check`  | Check source syntax and the local manifest without contacting a Station.                                 |
-| `make clean`  | Remove `.venv` and Python caches. Keep settings and private files.                                       |
+| Command                  | Action                                                                                                   |
+| ------------------------ | -------------------------------------------------------------------------------------------------------- |
+| `make help`              | List all commands.                                                                                       |
+| `make status`            | Inspect root access, firmware, the ADB guard, update launcher settings, and the current updater process. |
+| `make check-source test` | Check source syntax, the local manifest and host tests without contacting a Station.                     |
+| `make clean`             | Remove `.venv` and Python caches. Keep settings and private files.                                       |
 
 <details>
 <summary>Restore the original ADB script and automatic updates</summary>
@@ -470,6 +504,6 @@ restoring the ADB script. A later cloud configuration can deactivate ADB again.
   [Fluepke's disclosure](https://github.com/Fluepke/emudrahahahahaha). **Do not import that CA into
   the computer's or phone's trust store.**
 - `private/enable_state.json` records configuration-change metadata without authorization headers or
-  the configuration body. `pyproject.toml` declares dependencies and `uv.lock` pins them.
+  the configuration body.
 
 </details>

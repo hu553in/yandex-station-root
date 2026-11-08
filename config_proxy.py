@@ -6,6 +6,7 @@ import tempfile
 from datetime import UTC, datetime
 from decimal import Decimal
 from pathlib import Path
+from typing import cast
 from urllib.parse import urlsplit
 
 from mitmproxy import ctx, exceptions, http
@@ -28,9 +29,7 @@ def patch_config(content: bytes) -> bytes:
     if not isinstance(payload, dict) or payload.get("status") != "ok":
         raise ValueError("Expected a successful configuration response")
     config = payload.get("config")
-    if not isinstance(config, dict) or not isinstance(
-        config.get("system_config"), dict
-    ):
+    if not isinstance(config, dict) or not isinstance(config.get("system_config"), dict):
         raise TypeError("Expected system_config")
     system = config["system_config"]
     if "adbd" in system and not isinstance(system["adbd"], dict):
@@ -50,9 +49,7 @@ class StationConfig:
         loader.add_option("station_target", str, "", "Selected Station's IPv4 address")
         loader.add_option("station_device_id", str, "", "Selected Station's device_id")
         loader.add_option("station_platform", str, "", "Selected Station's platform")
-        loader.add_option(
-            "station_state", str, "", "Private path for redacted result metadata"
-        )
+        loader.add_option("station_state", str, "", "Private path for redacted result metadata")
         loader.add_option("station_offer_manifest", str, "", "Firmware manifest path")
         loader.add_option(
             "station_offer_receipt", str, "", "Existing private one-shot offer receipt"
@@ -68,20 +65,16 @@ class StationConfig:
             )
         ):
             raise exceptions.OptionsError(
-                "Set station_target, station_device_id, station_platform and station_state before changing ADB"
+                "Set station_target, station_device_id, station_platform and "
+                "station_state before changing ADB"
             )
         try:
             ipaddress.IPv4Address(ctx.options.station_target)
         except ValueError as error:
             raise exceptions.OptionsError("Invalid station_target") from error
-        offer_paths = (
-            ctx.options.station_offer_manifest,
-            ctx.options.station_offer_receipt,
-        )
+        offer_paths = (ctx.options.station_offer_manifest, ctx.options.station_offer_receipt)
         if bool(offer_paths[0]) != bool(offer_paths[1]):
-            raise exceptions.OptionsError(
-                "Firmware offer requires manifest and receipt"
-            )
+            raise exceptions.OptionsError("Firmware offer requires manifest and receipt")
         try:
             self.offer = (
                 FirmwareOffer(
@@ -133,10 +126,7 @@ class StationConfig:
                 and not authority.path
                 and not authority.query
                 and not authority.fragment
-                and (
-                    not flow.client_conn.sni
-                    or flow.client_conn.sni == authority.hostname
-                )
+                and (not flow.client_conn.sni or flow.client_conn.sni == authority.hostname)
             )
         except ValueError:
             valid_authority = False
@@ -144,24 +134,15 @@ class StationConfig:
             flow.response = http.Response.make(421, b"Unexpected authority")
             return
         # Reverse mode prepopulates the default upstream, not the original Host.
-        request.host = authority.hostname
+        request.host = cast("str", authority.hostname)
         path = urlsplit(request.path).path
         if self.selected_source(flow) and path == "/generate_204":
             flow.response = http.Response.make(204, b"", {"Cache-Control": "no-store"})
-            logger.info(
-                "Selected Station connectivity check, host=%s status=204",
-                request.host,
-            )
+            logger.info("Selected Station connectivity check, host=%s status=204", request.host)
             return
-        if (
-            self.offer is None
-            and self.selected_source(flow)
-            and path == "/check_updates"
-        ):
+        if self.offer is None and self.selected_source(flow) and path == "/check_updates":
             flow.response = http.Response.make(
-                200,
-                NO_UPDATE,
-                {"Content-Type": "application/json", "Cache-Control": "no-store"},
+                200, NO_UPDATE, {"Content-Type": "application/json", "Cache-Control": "no-store"}
             )
             logger.info("Selected Station update check blocked, status=200")
             return
@@ -169,10 +150,7 @@ class StationConfig:
             flow.response = http.Response.make(
                 307,
                 b"",
-                {
-                    "Location": "https://" + request.host + request.path,
-                    "Cache-Control": "no-store",
-                },
+                {"Location": "https://" + request.host + request.path, "Cache-Control": "no-store"},
             )
             return
         request.port = 443
@@ -190,12 +168,7 @@ class StationConfig:
             ):
                 content, reason = self.offer.check(version)
             flow.response = http.Response.make(
-                200,
-                content,
-                {
-                    "Content-Type": "application/json",
-                    "Cache-Control": "no-store",
-                },
+                200, content, {"Content-Type": "application/json", "Cache-Control": "no-store"}
             )
             shown_version = (
                 version
@@ -208,7 +181,8 @@ class StationConfig:
                 else "unavailable"
             )
             logger.info(
-                "Selected Station update response prepared, host=%s status=200 reason=%s firmware=%s",
+                "Selected Station update response prepared, host=%s status=200 "
+                "reason=%s firmware=%s",
                 request.host,
                 reason,
                 shown_version,
@@ -237,9 +211,7 @@ class StationConfig:
         try:
             after = patch_config(before)
         except (ValueError, TypeError):
-            logger.warning(
-                "Selected Station configuration was not modified: unexpected JSON shape"
-            )
+            logger.warning("Selected Station configuration was not modified: unexpected JSON shape")
             return
         try:
             state = {
@@ -250,9 +222,7 @@ class StationConfig:
             }
             path = Path(ctx.options.station_state)
             path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
-            fd, temporary_name = tempfile.mkstemp(
-                prefix=path.name + ".", dir=path.parent
-            )
+            fd, temporary_name = tempfile.mkstemp(prefix=path.name + ".", dir=path.parent)
             temporary = Path(temporary_name)
             try:
                 with os.fdopen(fd, "w") as output:
@@ -265,9 +235,7 @@ class StationConfig:
         except OSError as error:
             logger.error("Cannot write Station result metadata: %s", error)
             flow.response = http.Response.make(
-                502,
-                b"Cannot record Station configuration result",
-                {"Cache-Control": "no-store"},
+                502, b"Cannot record Station configuration result", {"Cache-Control": "no-store"}
             )
             return
         flow.response.content = after

@@ -1,0 +1,22 @@
+#:schema https://www.schemastore.org/prek.json
+
+default_install_hook_types = ["pre-commit", "commit-msg"]
+default_stages = ["pre-commit"]
+
+[[repos]]
+repo = "local"
+
+[[repos.hooks]]
+id = "check"
+name = "check"
+entry = "sh -c 'make check || { make check-fix; exit 1; }'"
+language = "system"
+always_run = true
+pass_filenames = false
+
+[[repos.hooks]]
+id = "commitlint"
+name = "commitlint"
+entry = "bunx --silent --package @commitlint/cli@latest commitlint --default-config --strict --edit"
+language = "system"
+stages = ["commit-msg"]

@@ -16,11 +16,10 @@ NO_UPDATE = b'{"hasUpdate":false}'
 
 def version_parts(value):
     factory = re.fullmatch(
-        r"([0-9]{1,12}(?:\.[0-9]{1,12}){5})\.factory-[0-9]{1,3}\.FACTORY\.factory",
-        value,
+        r"([0-9]{1,12}(?:\.[0-9]{1,12}){5})\.factory-[0-9]{1,3}\.FACTORY\.factory", value
     )
     if factory:
-        return tuple(map(int, factory[1].split("."))) + (0,)
+        return (*map(int, factory[1].split(".")), 0)
     if not re.fullmatch(r"[0-9]{1,12}(?:\.[0-9]{1,12}){6}", value):
         raise ValueError("Unrecognized firmware version")
     return tuple(map(int, value.split(".")))
@@ -54,7 +53,8 @@ def validate_manifest(content, platform):
             or not url.path.endswith("/" + payload["version"] + ".zip")
         ):
             raise ValueError(
-                f"Expected an official HTTPS {field} for platform {platform} and version {payload['version']}"
+                f"Expected an official HTTPS {field} for platform {platform} "
+                f"and version {payload['version']}"
             )
     if type(payload.get("crc32")) is not int or not 0 <= payload["crc32"] <= 0xFFFFFFFF:
         raise ValueError("Expected the updater's crc32 field")
@@ -120,9 +120,7 @@ class FirmwareOffer:
                     return NO_UPDATE, "already_spent"
                 offered = observed is None or observed < version_parts(self.version)
                 reason = "offer_reserved" if offered else "already_current_or_newer"
-                receipt.update(
-                    phase="spent", reason=reason, at=datetime.now(UTC).isoformat()
-                )
+                receipt.update(phase="spent", reason=reason, at=datetime.now(UTC).isoformat())
                 write_receipt(self.path, receipt)
                 return (self.content if offered else NO_UPDATE), reason
         except (OSError, ValueError, TypeError):
@@ -160,11 +158,13 @@ if __name__ == "__main__":
     except FileExistsError:
         parser.exit(
             2,
-            "Receipt already exists. Inspect it before deliberately archiving it for a new attempt.\n",
+            "Receipt already exists. Inspect it before deliberately archiving "
+            "it for a new attempt.\n",
         )
     except (OSError, ValueError, TypeError) as error:
         parser.exit(
             2,
-            f"Cannot arm firmware offer: {error}. Check the manifest, platform and receipt paths.\n",
+            f"Cannot arm firmware offer: {error}. "
+            "Check the manifest, platform and receipt paths.\n",
         )
     print("Firmware offer armed. Restarting the proxy will not rearm it.")

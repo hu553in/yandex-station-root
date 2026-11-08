@@ -5,7 +5,7 @@ import copy
 import json
 import re
 import shlex
-import subprocess
+import subprocess  # nosec B404 # explicit local argv, no host shell
 import tempfile
 from pathlib import Path
 
@@ -59,9 +59,7 @@ def executable_lines(content):
 
 def native_adb(content):
     lines = executable_lines(content)
-    if not lines or not re.fullmatch(
-        r'\. "`dirname \$0\s*`/adb_options\.inc" \$\*', lines[0]
-    ):
+    if not lines or not re.fullmatch(r'\. "`dirname \$0\s*`/adb_options\.inc" \$\*', lines[0]):
         return False
     body = "\n".join(lines[1:])
     return (
@@ -83,10 +81,7 @@ def wrapper_backup(content):
     lines = executable_lines(content)
     if not lines:
         return None
-    match = re.fullmatch(
-        rf'exec ({Q}/activate_adb\.[A-Za-z0-9_.-]*original\.sh) "\$@"',
-        lines[-1],
-    )
+    match = re.fullmatch(rf'exec ({Q}/activate_adb\.[A-Za-z0-9_.-]*original\.sh) "\$@"', lines[-1])
     if not match:
         return None
     backup = match[1]
@@ -97,9 +92,7 @@ def wrapper_backup(content):
 
 def unique_original(candidates):
     if len(set(candidates.values())) > 1:
-        raise ValueError(
-            "Conflicting original backups; leave files untouched and inspect them"
-        )
+        raise ValueError("Conflicting original backups; leave files untouched and inspect them")
     return next(iter(candidates), None)
 
 
@@ -108,9 +101,7 @@ def prepare_adb(files, restore):
     reference = wrapper_backup(live)
     if reference:
         if reference not in files or not native_adb(files[reference]):
-            raise ValueError(
-                "ADB guard's referenced native backup is missing or unsupported"
-            )
+            raise ValueError("ADB guard's referenced native backup is missing or unsupported")
         return (files[reference] if restore else live), None, "guard installed"
     if not native_adb(live):
         raise ValueError("Unsupported ADB activation script")
@@ -190,12 +181,10 @@ def same_json(left, right):
     if type(left) is not type(right):
         return False
     if isinstance(left, dict):
-        return left.keys() == right.keys() and all(
-            same_json(left[k], right[k]) for k in left
-        )
+        return left.keys() == right.keys() and all(same_json(left[k], right[k]) for k in left)
     if isinstance(left, list):
         return len(left) == len(right) and all(
-            same_json(a, b) for a, b in zip(left, right)
+            same_json(a, b) for a, b in zip(left, right, strict=False)
         )
     return left == right
 
@@ -204,19 +193,13 @@ def prepare_launcher(files, restore):
     live = parse_launcher(files[LAUNCHER])
     disabled, enabled = without_updater(live)
     backups = {
-        k: v
-        for k, v in files.items()
-        if k.startswith("launch.") and k.endswith("original.json")
+        k: v for k, v in files.items() if k.startswith("launch.") and k.endswith("original.json")
     }
     for content in backups.values():
         original = parse_launcher(content)
         expected, original_enabled = without_updater(original)
-        if not original_enabled or not same_json(
-            live, original if enabled else expected
-        ):
-            raise ValueError(
-                "Launcher differs from its original backup; refusing replacement"
-            )
+        if not original_enabled or not same_json(live, original if enabled else expected):
+            raise ValueError("Launcher differs from its original backup; refusing replacement")
     backup = unique_original(backups)
     if not enabled and not backup:
         raise ValueError("Updater absent without a usable original launcher backup")
@@ -247,15 +230,16 @@ printf '%s\\n' "$@"
 
 
 def adb_run(adb, serial, *args):
-    result = subprocess.run(
-        [adb, "-s", serial, *args],
-        capture_output=True,
-        timeout=60,
-        check=False,
+    result = subprocess.run(  # nosec B603 # explicitly selected ADB argv, no host shell
+        [adb, "-s", serial, *args], capture_output=True, timeout=60, check=False
     )
     if result.returncode:
         raise ValueError(
-            f"ADB command failed: {result.stderr.decode(errors='replace').strip() or result.stdout.decode(errors='replace').strip()}"
+            "ADB command failed: "
+            + (
+                result.stderr.decode(errors="replace").strip()
+                or result.stdout.decode(errors="replace").strip()
+            )
         )
     return result.stdout
 
@@ -312,12 +296,9 @@ def updater_status(adb, serial):
         return "unknown"
 
 
-def apply_change(adb, serial, files, destination, replacement, backup, markers):
-    stage = (
-        adb_shell(adb, serial, "mktemp -d /data/local/tmp/station-root.XXXXXX")
-        .decode()
-        .strip()
-    )
+# Keep the complete native replacement contract explicit at this single call boundary.
+def apply_change(adb, serial, files, destination, replacement, backup, markers):  # noqa: PLR0913, PLR0917
+    stage = adb_shell(adb, serial, "mktemp -d /data/local/tmp/station-root.XXXXXX").decode().strip()
     if not re.fullmatch(r"/data/local/tmp/station-root\.[A-Za-z0-9]+", stage):
         raise ValueError("Unexpected remote staging path")
     try:
@@ -358,7 +339,7 @@ done
 for f do
     [ -f "$f" ] && [ ! -L "$f" ] && cmp -s "$f" "$stage/$f" || {{ echo 'Native files changed; retry' >&2; exit 1; }}
 done
-"""
+"""  # noqa: E501
         if backup or replacement != files[destination]:
             script += """root_options=$(awk '$2 == "/" {print $4}' /proc/mounts)
 case ",$root_options," in
@@ -392,9 +373,7 @@ touch /data/quasar/activate_adb_quasmodrom /data/quasar/activate_network_adb
 """
         adb_shell(adb, serial, script)
         if adb_read(adb, serial, f"{Q}/{destination}") != replacement:
-            raise ValueError(
-                "Station file differs after installation; inspect before retrying"
-            )
+            raise ValueError("Station file differs after installation; inspect before retrying")
     finally:
         adb_shell(adb, serial, "rm -rf " + shlex.quote(stage))
 
@@ -405,13 +384,7 @@ def main():
     parser.add_argument("--serial", required=True)
     parser.add_argument(
         "operation",
-        choices=(
-            "status",
-            "install-adb",
-            "restore-adb",
-            "disable-updates",
-            "restore-updates",
-        ),
+        choices=("status", "install-adb", "restore-adb", "disable-updates", "restore-updates"),
     )
     args = parser.parse_args()
     try:
@@ -426,16 +399,16 @@ def main():
             markers = adb_shell(
                 args.adb,
                 args.serial,
-                'for m in activate_adb_quasmodrom activate_network_adb; do if [ -f "/data/quasar/$m" ]; then echo "$m present"; else echo "$m missing"; fi; done\n',
+                "for m in activate_adb_quasmodrom activate_network_adb; do if [ "
+                '-f "/data/quasar/$m" ]; then echo "$m present"; else echo "$m '
+                'missing"; fi; done\n',
             )
             print(markers.decode().strip())
             return
         is_adb = args.operation.endswith("adb")
         destination = ADB_SCRIPT if is_adb else LAUNCHER
         prepare = prepare_adb if is_adb else prepare_launcher
-        replacement, backup, _ = prepare(
-            files, restore=args.operation.startswith("restore")
-        )
+        replacement, backup, _ = prepare(files, restore=args.operation.startswith("restore"))
         apply_change(
             args.adb,
             args.serial,
@@ -454,12 +427,7 @@ def main():
         print("Applied " + args.operation + detail)
         if not is_adb:
             print("Updater in this boot: " + updater_status(args.adb, args.serial))
-    except (
-        OSError,
-        ValueError,
-        TypeError,
-        subprocess.SubprocessError,
-    ) as error:
+    except (OSError, ValueError, TypeError, subprocess.SubprocessError) as error:
         parser.exit(1, f"{error}\n")
 
 

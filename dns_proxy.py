@@ -2,6 +2,7 @@ import os
 import runpy
 import socket
 from http.client import HTTPException
+from typing import cast
 from urllib.request import Request, urlopen
 
 import dns.exception
@@ -11,17 +12,16 @@ import dns.query
 from dnslib import DNSError, DNSRecord
 
 
-def send_over_https(record, _dest, _port=53, tcp=False, ipv6=False, timeout=None):
+# Match DNSRecord.send, including its unused keyword arguments.
+def send_over_https(self, dest, port=53, tcp=False, timeout=None, ipv6=False):  # noqa: PLR0913, PLR0917
+    del dest, port, tcp, ipv6
     request = Request(
         "https://dns.google/dns-query",
-        data=record.pack(),
-        headers={
-            "Content-Type": "application/dns-message",
-            "Accept": "application/dns-message",
-        },
+        data=self.pack(),
+        headers={"Content-Type": "application/dns-message", "Accept": "application/dns-message"},
     )
     try:
-        with urlopen(request, timeout=timeout or 5) as response:
+        with urlopen(request, timeout=timeout or 5) as response:  # nosec B310 # fixed HTTPS DNS endpoint
             content = response.read(65536)
         if len(content) > 65535:
             raise ValueError("Oversized DNS response")
@@ -31,21 +31,17 @@ def send_over_https(record, _dest, _port=53, tcp=False, ipv6=False, timeout=None
         raise TimeoutError("DNS-over-HTTPS upstream failed") from error
 
 
-def send_over_tcp(record, dest, port=53, tcp=False, timeout=None, ipv6=False):
+# The tcp argument belongs to DNSRecord.send even though this adapter always uses TCP.
+def send_over_tcp(self, dest, port=53, tcp=False, timeout=None, ipv6=False):  # noqa: PLR0913, PLR0917
+    del tcp
     try:
-        message = dns.message.from_wire(bytes(record.pack()))
+        message = dns.message.from_wire(bytes(self.pack()))
         if not dns.inet.is_address(dest):
             family = socket.AF_INET6 if ipv6 else socket.AF_INET
-            dest = socket.getaddrinfo(dest, port, family, socket.SOCK_STREAM)[0][4][0]
+            dest = cast("str", socket.getaddrinfo(dest, port, family, socket.SOCK_STREAM)[0][4][0])
         response = dns.query.tcp(message, dest, port=port, timeout=timeout)
         return response.to_wire()
-    except (
-        dns.exception.DNSException,
-        EOFError,
-        OSError,
-        DNSError,
-        ValueError,
-    ) as error:
+    except (dns.exception.DNSException, EOFError, OSError, DNSError, ValueError) as error:
         raise TimeoutError("DNS-over-TCP upstream failed") from error
 
 
