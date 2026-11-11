@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "Host tools for enabling root ADB and managing supported Yandex Stations."
 authors = [{ name = "Ruslan Khasanshin" }]
 readme = "README.md"
-requires-python = ">=3.13.0"
+requires-python = ">=3.15.2"
 dependencies = [
   "cryptography>=50.0.2",
   "dnslib>=0.9.26",
