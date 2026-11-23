@@ -16,8 +16,8 @@ OFFER_UPDATE ?= 0
 
 -include config.mk
 
-ACTIONLINT := bunx github-actionlint
-TAPLO := bunx @taplo/cli
+ACTIONLINT := bunx --minimum-release-age 259200 github-actionlint
+TAPLO := bunx --minimum-release-age 259200 @taplo/cli
 
 VENV := .venv/bin
 HOSTS := quasar.yandex.net quasar.yandex.ru scbh.yandex.net
@@ -104,10 +104,6 @@ check-unused:
 check-security:
 	git ls-files --cached --others --exclude-standard -z -- '*.py' | xargs -0 $(UV) run --locked bandit -c pyproject.toml
 
-.PHONY: check-renovate
-check-renovate:
-	bunx --package renovate renovate-config-validator --strict --no-global renovate.json
-
 .PHONY: check-workflows
 check-workflows:
 	$(ACTIONLINT)
@@ -184,7 +180,7 @@ test:
 	PYTHONDONTWRITEBYTECODE=1 $(UV) run --locked --no-dev python -m unittest discover -p 'test_*.py'
 
 .PHONY: check
-check: lint check-git check-types check-deps check-vulns check-unused check-security check-source test check-renovate check-workflows
+check: lint check-git check-types check-deps check-vulns check-unused check-security check-source test check-workflows
 
 .PHONY: check-fix
 check-fix: lint-fix

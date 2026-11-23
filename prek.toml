@@ -17,6 +17,6 @@ pass_filenames = false
 [[repos.hooks]]
 id = "commitlint"
 name = "commitlint"
-entry = "bunx --silent --package @commitlint/cli@latest commitlint --default-config --strict --edit"
+entry = "bunx --minimum-release-age 259200 --silent --package @commitlint/cli@latest commitlint --default-config --strict --edit"
 language = "system"
 stages = ["commit-msg"]

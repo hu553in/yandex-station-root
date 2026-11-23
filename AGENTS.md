@@ -78,14 +78,13 @@ and permissions. These rules support different agents; do not assume a particula
   consumers. Verify cross-file invariants held together only by comments or convention.
 - Delegate independent parts of substantial work when worthwhile and available. Preserve scope and
   mutation boundaries, avoid overlapping edits, and reconcile findings.
-- When dependencies are in scope, check current stable releases and updater ownership. Renovate
-  coverage is not a reason to defer an upgrade. Prefer upgrades, including majors, and resolve
-  fixable incompatibilities within authorized scope; defer when a demonstrated blocker cannot be
-  resolved within that scope, explaining what blocks it. Keep related declarations consistent and
-  validate the result. Preserve intentional floating action majors and internal reusable-workflow
-  branch refs; read-only reviews propose upgrades rather than applying them. Report upgrade
-  opportunities separately from defects unless there is a demonstrated correctness or security
-  issue.
+- When dependencies are in scope, check current stable releases and updater ownership. Prefer
+  upgrades, including majors, and resolve fixable incompatibilities within authorized scope; defer
+  when a demonstrated blocker cannot be resolved within that scope, explaining what blocks it. Keep
+  related declarations consistent and validate the result. Preserve intentional floating action
+  majors and internal reusable-workflow branch refs; read-only reviews propose upgrades rather than
+  applying them. Report upgrade opportunities separately from defects unless there is a demonstrated
+  correctness or security issue.
 - Test behavior and contracts rather than incidental implementation details, the continued absence
   of a deleted symbol, or a coverage number. Text assertions are appropriate when text is the actual
   contract, such as generated code, lint diagnostics, or document transformations, not a proxy for

@@ -453,17 +453,14 @@ make check
 ```
 
 This checks formatting, Ruff, types, dependencies, known vulnerabilities, unused code, Bandit,
-embedded shell, the firmware manifest, host tests, Renovate and GitHub Actions. It does not contact
-a Station or modify router settings. `make lint-fix` applies supported formatting fixes;
-`make check-fix` applies them and then repeats all checks.
+embedded shell, the firmware manifest, host tests, and GitHub Actions. It does not contact a Station
+or modify router settings. `make lint-fix` applies supported formatting fixes; `make check-fix`
+applies them and then repeats all checks.
 
-Dependencies are declared in `pyproject.toml` and locked by uv. Renovate uses the shared
-[Python preset](https://github.com/hu553in/common-things/blob/main/presets/renovate/python.json).
-New package releases wait three days. Investigate vulnerability findings before adding a scoped
-exception. The three Tornado advisory IDs in [pyproject.toml](pyproject.toml) affect Tornado's HTTP
-servers, HTTP clients, and redirect handlers. This project runs `mitmdump`, whose proxy stack does
-not use those components. Reassess these exceptions before using `mitmweb` or addons that use
-Tornado, and remove them after upgrading to a fixed Tornado release.
+Dependencies are declared in `pyproject.toml` and locked by uv. New package releases wait three
+days. mitmproxy currently accepts Tornado up to 6.5.10. The [audit exceptions](pyproject.toml) cover
+four advisories for Tornado HTTP components that the project's `mitmdump` proxy does not use. Remove
+them when the lock file can move to Tornado 6.6.1 or later.
 
 After `make install-deps`, enable the project checks and Conventional Commit hooks once per clone:
 
