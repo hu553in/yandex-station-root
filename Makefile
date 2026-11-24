@@ -17,7 +17,6 @@ OFFER_UPDATE ?= 0
 -include config.mk
 
 ACTIONLINT := bunx --minimum-release-age 259200 github-actionlint
-TAPLO := bunx --minimum-release-age 259200 @taplo/cli
 
 VENV := .venv/bin
 HOSTS := quasar.yandex.net quasar.yandex.ru scbh.yandex.net
@@ -68,20 +67,18 @@ install-runtime-deps:
 .PHONY: lint
 lint:
 	bun fmt --check
-	$(TAPLO) fmt --check
 	$(UV) run --locked ruff check
 	$(UV) run --locked ruff format --check
 
 .PHONY: lint-fix
 lint-fix:
 	bun fmt
-	$(TAPLO) fmt
 	$(UV) run --locked ruff check --fix
 	$(UV) run --locked ruff format
 
-.PHONY: check-git
-check-git:
-	$(UV) run --locked prek validate-config prek.toml
+.PHONY: check-hooks
+check-hooks:
+	bunx --minimum-release-age 259200 lefthook validate
 
 .PHONY: check-types
 check-types:
@@ -89,7 +86,6 @@ check-types:
 
 .PHONY: check-deps
 check-deps:
-	$(UV) lock --check
 	$(UV) run --locked deptry .
 
 .PHONY: check-vulns
@@ -172,15 +168,15 @@ reboot: connect
 	"$(ADB)" -s "$(REMOTE)" reboot
 
 .PHONY: check-source
-check-source: install-runtime-deps
-	$(UV) run --locked --no-dev python check_source.py
+check-source:
+	$(UV) run --no-project python check_source.py
 
 .PHONY: test
 test:
 	PYTHONDONTWRITEBYTECODE=1 $(UV) run --locked --no-dev python -m unittest discover -p 'test_*.py'
 
 .PHONY: check
-check: lint check-git check-types check-deps check-vulns check-unused check-security check-source test check-workflows
+check: lint check-hooks check-types check-deps check-vulns check-unused check-security check-source test check-workflows
 
 .PHONY: check-fix
 check-fix: lint-fix

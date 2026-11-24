@@ -125,7 +125,7 @@ again during [factory recovery](#factory-reset-and-firmware-recovery).
 Create the local settings file once:
 
 ```sh
-cp config.example.mk config.mk
+if [ ! -e config.mk ] && [ ! -L config.mk ]; then cp config.example.mk config.mk; fi
 nano config.mk
 ```
 
@@ -442,13 +442,11 @@ Retry the interrupted command only after checking the previous outcome. Keep the
 ## Developer checks
 
 Normal setup needs only `make check-source test`. For the complete developer checks, also install
-[Bun](https://bun.sh/docs/installation) and [Node.js](https://nodejs.org/). Some developer
-dependencies build Rust extensions when a Python wheel is unavailable; install
-[Rust](https://rustup.rs/) if uv reports a missing Rust compiler. Normal Station commands do not
-install developer tools. Run:
+[Bun](https://bun.sh/docs/installation). Some developer dependencies build Rust extensions when a
+Python wheel is unavailable. Install [Rust](https://rustup.rs/) if uv reports a missing Rust
+compiler. Normal Station commands do not install developer tools. Run:
 
 ```sh
-make install-deps
 make check
 ```
 
@@ -457,15 +455,15 @@ embedded shell, the firmware manifest, host tests, and GitHub Actions. It does n
 or modify router settings. `make lint-fix` applies supported formatting fixes; `make check-fix`
 applies them and then repeats all checks.
 
-Dependencies are declared in `pyproject.toml` and locked by uv. New package releases wait three
-days. mitmproxy currently accepts Tornado up to 6.5.10. The [audit exceptions](pyproject.toml) cover
-four advisories for Tornado HTTP components that the project's `mitmdump` proxy does not use. Remove
-them when the lock file can move to Tornado 6.6.1 or later.
+Dependencies are declared in `pyproject.toml` and locked by uv. mitmproxy currently accepts Tornado
+up to 6.5.10. The [audit exceptions](pyproject.toml) cover four advisories for Tornado HTTP
+components that the project's `mitmdump` proxy does not use. Remove them when the lock file can move
+to Tornado 6.6.1 or later.
 
-After `make install-deps`, enable the project checks and Conventional Commit hooks once per clone:
+To enable the project checks and Conventional Commit hooks, run once per clone:
 
 ```sh
-uv run --locked prek install
+bunx lefthook install
 ```
 
 ## Other commands

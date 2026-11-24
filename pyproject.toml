@@ -5,12 +5,7 @@ description = "Host tools for enabling root ADB and managing supported Yandex St
 authors = [{ name = "Ruslan Khasanshin" }]
 readme = "README.md"
 requires-python = ">=3.13.0"
-dependencies = [
-  "cryptography>=50.0.2",
-  "dnslib>=0.9.26",
-  "dnspython>=2.9.2",
-  "mitmproxy>=12.3.1",
-]
+dependencies = ["cryptography>=50.0.2", "dnslib>=0.9.26", "dnspython>=2.9.2", "mitmproxy>=12.3.1"]
 
 [project.urls]
 Repository = "https://github.com/hu553in/yandex-station-root"
@@ -19,7 +14,6 @@ Repository = "https://github.com/hu553in/yandex-station-root"
 dev = [
   "bandit>=1.9.4",
   "deptry>=0.25.1",
-  "prek>=0.5.11",
   "pysentry-rs>=0.5.0",
   "ruff>=0.17.6",
   "ty>=0.0.107",
@@ -75,12 +69,7 @@ enabled = ["pypa", "pypi", "osv"]
 [tool.pysentry.ignore]
 # The mitmdump proxy does not use Tornado's HTTP server, client, or RedirectHandler.
 # Reassess before adding mitmweb or Tornado addons. Remove once mitmproxy allows Tornado 6.6.1+.
-ids = [
-  "GHSA-pcg2-g6cj-q92c",
-  "GHSA-r4j5-9xpp-3985",
-  "GHSA-pw9p-v7r6-gx4p",
-  "GHSA-5cjw-f85j-cv6r",
-]
+ids = ["GHSA-pcg2-g6cj-q92c", "GHSA-r4j5-9xpp-3985", "GHSA-pw9p-v7r6-gx4p", "GHSA-5cjw-f85j-cv6r"]
 
 [tool.deptry]
 known_first_party = [

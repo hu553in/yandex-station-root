@@ -7,7 +7,6 @@ Thumbs.db
 .vscode/
 .idea/
 *.iml
-node_modules/
 .venv/
 .ruff_cache/
 __pycache__/
