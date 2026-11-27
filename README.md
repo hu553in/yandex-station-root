@@ -2,15 +2,21 @@
 
 [![CI](https://github.com/hu553in/yandex-station-root/actions/workflows/ci.yml/badge.svg)](https://github.com/hu553in/yandex-station-root/actions/workflows/ci.yml)
 
-Get administrator access to a Yandex Station through ADB, the tool used to connect to its Linux
-system. Keep that access after a reboot and turn off automatic firmware updates.
+Get administrator access to a Yandex Station Mini 2 through ADB, the tool used to connect to its
+Linux system. Keep that access after a reboot and turn off automatic firmware updates.
 
-**All ideas come from [eQuasar](https://git.gay/iwakura/eQuasar). This is just a repack for my own
-convenience.**
+The root setup builds on [iwakura's eQuasar](https://git.gay/iwakura/eQuasar). Thanks to the
+[Yandex Station Extended community (HackAlice)](https://hackalice.me/) for its device guides and
+firmware research.
 
-- **Tested device.** Station Mini 2, model `YNDX-00020`.
-- **Tested firmware.** `0.369.1.46.4778262943.20261013.299`. Other models and builds are untested.
-- **Known incompatibility.** The tested `.50` build rejects the certificate chain used here.
+- **Tested setup.** Station Mini 2 (`YNDX-00020`) on firmware `0.369.1.46.4778262943.20261013.299`.
+- **Known incompatibility.** A `.50` build rejected the certificate chain during testing.
+- **Other models or firmware.** Start with the
+  [HackAlice device catalog](https://hackalice.me/devices/).
+- **Already have root ADB?** If Alice still works, see
+  [ChatGPT Voice for Yandex Station](https://github.com/hu553in/yandex-station-chatgpt-voice).
+- **Community reports.** Read or share results from this tool in
+  [Root compatibility reports](https://github.com/hu553in/yandex-station-root/issues/10).
 
 [Before you start](#1-check-the-station-and-network) · [Computer setup](#2-prepare-the-computer) ·
 [Device settings](#3-save-the-device-settings) · [Get root](#4-enable-and-check-adb) ·
@@ -27,10 +33,10 @@ Before changing DNS or resetting the Station:
 
 1. Read the model code on its base. Check the full firmware version in its device information in
    **Дом с Алисой**.
-2. Save the full Quasar **`device_id`** field exactly as shown in that information. The web app's
+2. Compare both with the tested combination above. For a different model or firmware, check the
+   [HackAlice device catalog](https://hackalice.me/devices/) for guidance on your device.
+3. Save the full Quasar **`device_id`** field exactly as shown in that information. The web app's
    device UUID is a different identifier.
-3. Compare them with the tested combination above. For a different model or build, this guide does
-   not establish compatibility. Do not continue as though it does.
 
 **Stop if you cannot identify the device or its firmware.** A factory reset is not a guaranteed
 rollback to a compatible build. For an already identified Mini 2 that needs activation after a
@@ -280,7 +286,7 @@ check that root access still works without the helpers.
 
 ## Factory reset and firmware recovery
 
-Use this section only for the identified Mini 2. Other models and builds are untested. **A reset
+Use this section only for the identified Mini 2. Recovery was tested on `YNDX-00020`. **A reset
 clears Wi-Fi and account settings. It is not a guaranteed firmware downgrade.**
 
 ### Reset the Mini 2
